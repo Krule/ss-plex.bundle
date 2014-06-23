@@ -5,16 +5,20 @@ def MainMenu(refresh = 0):
     container = container_for('heading.download', no_cache = True)
 
     if bridge.download.assumed_running():
-        download = bridge.download.current()
-        endpoint = download['endpoint']
-        status   = ss.downloader.status_for(endpoint, strategy = bridge.download.strategy())
+        for download in bridge.download.dlq():
+            if download['pid']: 
 
-        container.add(popup_button(download['title'], OptionsForCurrent,
-            icon = 'icon-downloads.png'))
+                status   = ss.downloader.status_for(download['endpoint'], strategy = bridge.download.strategy())
 
-        for ln in status.report():
-            container.add(popup_button('- %s' % ln, OptionsForCurrent,
-                icon = 'icon-downloads.png'))
+                container.add(popup_button(download['title'], OptionsForCurrent,
+                endpoint = download['endpoint'], icon = 'icon-downloads.png'))
+
+                for ln in status.report():
+                    container.add(popup_button('- %s' % ln, OptionsForCurrent,
+                    endpoint = download['endpoint'], icon = 'icon-downloads.png'))
+            else: 
+                container.add(popup_button('Processing...' + download['title'], OptionsForCurrent,
+                endpoint = download['endpoint'], icon = 'icon-downloads.png'))
 
     for download in bridge.download.queue():
         container.add(popup_button(download['title'], OptionsForQueue,
@@ -30,7 +34,7 @@ def MainMenu(refresh = 0):
 @route('%s/options-for-endpoint' % FEATURE_PREFIX)
 def OptionsForEndpoint(endpoint):
     if bridge.download.is_current(endpoint):
-        return OptionsForCurrent()
+        return OptionsForCurrent(endpoint)
 
     queued = bridge.download.from_queue(endpoint)
     if queued: return OptionsForQueue(endpoint)
@@ -41,19 +45,19 @@ def OptionsForEndpoint(endpoint):
     return dialog('heading.error', F('download.response.not-found', endpoint))
 
 @route('%s/options-for-current' % FEATURE_PREFIX)
-def OptionsForCurrent():
-    download  = bridge.download.current()
+def OptionsForCurrent(endpoint):
+    download  = bridge.download.current(endpoint)
     if not download:
-        return dialog('heading.error', F('download.response.not-found', "'current'"))
+        return dialog('heading.error', F('download.response.not-found', endpoint))
 
     container = container_for(download['title'], no_cache = True)
 
-    if bridge.download.curl_running():
-        container.add(button('download.heading.next', NextSource))
-        container.add(button('download.heading.cancel', RemoveCurrent))
+    if download['pid'] and bridge.download.curl_running(download['pid']):
+        container.add(button('download.heading.next', NextSource, endpoint = endpoint, pid = download['pid']))
+        container.add(button('download.heading.cancel', RemoveCurrent, endpoint = endpoint, pid = download['pid']))
     else:
-        container.add(button('download.heading.force-success', ForceSuccess))
-        container.add(button('download.heading.force-failure', ForceFailure))
+        container.add(button('download.heading.force-success', ForceSuccess, endpoint = endpoint))
+        container.add(button('download.heading.force-failure', ForceFailure, endpoint = endpoint))
 
     return container
 
@@ -96,6 +100,7 @@ def Queue(endpoint, media_hint, title):
     else:
         slog.info('Adding %s %s to download queue' % (media_hint, title))
         message = 'added'
+        bridge.download.remove_failed(endpoint = endpoint)
         bridge.download.append(title = title, endpoint = endpoint, media_hint = media_hint)
 
     bridge.download.dispatch()
@@ -112,18 +117,18 @@ def DispatchForce():
     bridge.download.dispatch()
 
 @route('%s/force-success' % FEATURE_PREFIX)
-def ForceSuccess():
-    bridge.download.force_success()
+def ForceSuccess(endpoint):
+    bridge.download.force_success(endpoint)
     return dialog('heading.download', 'download.response.force-success')
 
 @route('%s/force-failure' % FEATURE_PREFIX)
-def ForceFailure():
-    bridge.download.force_failure()
+def ForceFailure(endpoint):
+    bridge.download.force_failure(endpoint)
     return dialog('heading.download', 'download.response.force-failure')
 
 @route('%s/next' % FEATURE_PREFIX)
-def NextSource():
-    bridge.download.command('next')
+def NextSource(endpoint, pid):
+    bridge.download.command('next', endpoint, int(pid))
     return dialog('heading.download', 'download.response.next')
 
 @route('%s/remove' % FEATURE_PREFIX)
@@ -148,9 +153,9 @@ def RemoveFailed(endpoint):
     return dialog('heading.download', 'download.response.remove-failed')
 
 @route('%s/remove-current' % FEATURE_PREFIX)
-def RemoveCurrent():
-    download = bridge.download.current()
-    bridge.download.command('cancel')
+def RemoveCurrent(endpoint, pid):
+    download = bridge.download.current(endpoint)
+    bridge.download.command('cancel', endpoint, int(pid))
 
     return dialog('heading.download',
             F('download.response.cancel', download['title']))

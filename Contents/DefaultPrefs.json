@@ -19,6 +19,13 @@
     "default":  "0"
   },
   {
+    "id":       "simultaneous_downloads",
+    "label":    "Limit simultaneous downloads",
+    "type":     "enum",
+    "values":   [ "1", "2", "5", "10", "15", "20", "30", "40", "50" ],
+    "default":  "5"
+  },
+  {
     "id":       "download_strategy",
     "label":    "Download using",
     "type":     "enum",
