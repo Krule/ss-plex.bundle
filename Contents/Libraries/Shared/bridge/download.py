@@ -142,6 +142,21 @@ def check_queue():
                 break
 
         dispatch()
+		
+def on_start_check_queue():
+    restart = True
+    while restart:
+        restart = False
+        for i, items in enumerate(dlq()):
+            log.info('Restarting anbandoned download: %s' % items['title'])
+            force_failure(items['endpoint'], dispatch = False)
+            remove_failed(items['endpoint'])
+            append(title = items['title'], endpoint = items['endpoint'], media_hint = items['media_hint'])
+            restart = True
+            break
+
+    for i in range(int(download_limit())):
+        dispatch()
 
 def command(command, endpoint, pid):
     if not curl_running(pid):
@@ -170,7 +185,7 @@ def force_success(endpoint):
     remove_dlq(endpoint)
     dispatch()
 
-def force_failure(endpoint):
+def force_failure(endpoint, dispatch = True):
     import os
 
     _d = current(endpoint)
@@ -186,8 +201,9 @@ def force_failure(endpoint):
     append_failed(title = _d['title'], endpoint = _d['endpoint'],
             media_hint = _d['media_hint'])
     remove_dlq(endpoint)
-    dispatch()
-
+    if dispatch:
+        dispatch()
+		
 def dispatch(should_thread = True):
 
     if int(download_limit()) <= len(dlq()):
@@ -312,4 +328,5 @@ def signal_process_windows(pid, to_send = 0):
         return True
     except:
         return False
+
 

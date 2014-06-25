@@ -12,6 +12,8 @@ slog   = ss.util.getLogger('ss.plex')
 
 updater.init(repo = 'mikew/ss-plex.bundle', branch = 'stable')
 
+bridge.download.on_start_check_queue()
+
 def Start():
     Plugin.AddViewGroup('Details', viewMode = 'InfoList', mediaType = 'items')
     Plugin.AddViewGroup('List',    viewMode = 'List',     mediaType = 'items')
@@ -52,3 +54,4 @@ import system
 import search
 import favorites
 import downloads
+
