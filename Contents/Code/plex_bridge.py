@@ -4,7 +4,9 @@ pref_keys = [
     'avoid_flv_streaming',
     'avoid_flv_downloading',
     'download_limit',
-    'download_strategy'
+    'download_strategy',
+    'simultaneous_downloads',
+    'auto_force_success'
 ]
 
 def download_strategy(strategy):
@@ -116,3 +118,4 @@ def init():
         bridge.download.dispatch = dispatch_with_keepalive
 
     return bridge
+

@@ -13,7 +13,8 @@ def dlq():         return settings.get('download_dlq', [])
 def failed():          return settings.get('download_failed',  [])
 def avoid_flv():       return settings.get('avoid_flv_downloading')
 def speed_limit():     return settings.get('download_limit', 0)
-def download_limit():     return settings.get('simultaneous_downloads', 5)
+def download_limit():     return settings.get('simultaneous_downloads')
+def force_success_option():     return settings.get('auto_force_success')
 def assumed_running(): return (0 < len(dlq()))
 def curl_running(pid):    return pid_running(pid)
 def running_windows(): return 'nt' == os.name
@@ -127,36 +128,37 @@ def on_start(dl): pass
 def on_error(dl): pass
 def on_success(dl): pass
 
-def check_queue():
+def check_queue(openqueue = 0):
     restart = True
     while restart:
         restart = False
         for i, items in enumerate(dlq()):
             if items['pid'] and not pid_running(items['pid']):
                 status = ss.downloader.status_for(items['endpoint'], strategy = strategy())
-                log.info('Anbandoned download, %s, restarting at %s complete' % (items['title'], status.report()[0].split("%%"[0])[0]))
-                force_failure(items['endpoint'])
-                remove_failed(items['endpoint'])
-                append(title = items['title'], endpoint = items['endpoint'], media_hint = items['media_hint'])
+                log.info('Found download, %s, at %s complete' % (items['title'], status.report()[0].split("%%"[0])[0]))
+                if 100 == int(status.report()[0].split("%%"[0])[0]) and force_success_option():
+                    force_success(items['endpoint'], should_dispatch = False)
+                    log.info('Forced Success of %s' % items['title'])
+                    openqueue = openqueue + 1
+                else:
+                    log.info('Restarting anbandoned download: %s' % items['title'])
+                    force_failure(items['endpoint'], should_dispatch = False)
+                    remove_failed(items['endpoint'])
+                    append(title = items['title'], endpoint = items['endpoint'], media_hint = items['media_hint'])
+                    openqueue = openqueue + 1
                 restart = True
                 break
+            if items['pid'] and pid_running(items['pid']):
+                log.info('Active Item %s' % items['title'])
 
-        dispatch()
-		
-def on_start_check_queue():
-    restart = True
-    while restart:
-        restart = False
-        for i, items in enumerate(dlq()):
-            log.info('Restarting anbandoned download: %s' % items['title'])
-            force_failure(items['endpoint'], dispatch = False)
-            remove_failed(items['endpoint'])
-            append(title = items['title'], endpoint = items['endpoint'], media_hint = items['media_hint'])
-            restart = True
-            break
-
-    for i in range(int(download_limit())):
-        dispatch()
+    if (openqueue + len(queue()) + 1) > int(download_limit()):
+        log.debug('Current download queue larger then permitted download amount Dispatching %s times' % download_limit())
+        for i in range(int(download_limit())):
+            dispatch()
+    else:
+        log.debug('Dispatching %s times, based on current download queue.' % (openqueue + len(queue()) + 1))
+        for i in range(openqueue + len(queue()) + 1):
+            dispatch()
 
 def command(command, endpoint, pid):
     if not curl_running(pid):
@@ -167,7 +169,7 @@ def command(command, endpoint, pid):
 
     return signal_process(pid, to_send)
 
-def force_success(endpoint):
+def force_success(endpoint, should_dispatch = True):
     import os
 
     _d = current(endpoint)
@@ -183,9 +185,10 @@ def force_success(endpoint):
     update_library(_h)
     append_history(_d['endpoint'])
     remove_dlq(endpoint)
-    dispatch()
+    if should_dispatch:
+        dispatch()
 
-def force_failure(endpoint, dispatch = True):
+def force_failure(endpoint, should_dispatch = True):
     import os
 
     _d = current(endpoint)
@@ -201,7 +204,7 @@ def force_failure(endpoint, dispatch = True):
     append_failed(title = _d['title'], endpoint = _d['endpoint'],
             media_hint = _d['media_hint'])
     remove_dlq(endpoint)
-    if dispatch:
+    if should_dispatch:
         dispatch()
 		
 def dispatch(should_thread = True):
@@ -328,5 +331,6 @@ def signal_process_windows(pid, to_send = 0):
         return True
     except:
         return False
+
 
 

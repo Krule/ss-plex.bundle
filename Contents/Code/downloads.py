@@ -5,6 +5,7 @@ def MainMenu(refresh = 0):
     container = container_for('heading.download', no_cache = True)
 
     if bridge.download.assumed_running():
+        bridge.download.check_queue()	
         for download in bridge.download.dlq():
             if download['pid']: 
 
@@ -159,3 +160,4 @@ def RemoveCurrent(endpoint, pid):
 
     return dialog('heading.download',
             F('download.response.cancel', download['title']))
+

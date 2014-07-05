@@ -26,6 +26,12 @@
     "default":  "5"
   },
   {
+    "id":       "auto_force_success",
+    "label":    "Process 100% complete as success",
+    "type":     "bool",
+    "default":  "true"
+  },
+  {
     "id":       "download_strategy",
     "label":    "Download using",
     "type":     "enum",
@@ -33,3 +39,4 @@
     "default":  "auto"
   }
 ]
+
