@@ -4,6 +4,7 @@ pref_keys = [
     'avoid_flv_streaming',
     'avoid_flv_downloading',
     'download_limit',
+    'show_only_new',
     'download_strategy'
 ]
 
