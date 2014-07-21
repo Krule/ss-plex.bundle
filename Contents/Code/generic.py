@@ -6,12 +6,16 @@ def RenderListings(endpoint, default_title = None):
     return render_listings(endpoint, default_title)
 
 @route('%s/WatchOptions' % consts.prefix)
-def WatchOptions(endpoint, title, media_hint):
+def WatchOptions(endpoint, title, media_hint, summary, thumb, tagline):
     container = render_listings(endpoint, default_title = title,
             cache_time = ss.cache.TIME_DAY)
     container.no_cache = True
 
-    wizard_item = VideoClipObject(title = L('media.watch-now'),
+    if 'Roku' == Client.Platform:
+        wizard_item = VideoClipObject(title = unicode(title), summary = summary, tagline = tagline, art = unicode(thumb),
+                url = wizard_url(endpoint), thumb = R('icon-watch-now.png'))
+    else:
+        wizard_item = VideoClipObject(title = L('media.watch-now'),
             url = wizard_url(endpoint), thumb = R('icon-watch-now.png'))
 
     sources_item = button('media.all-sources', ListSources,
@@ -75,16 +79,19 @@ def ListTVShow(endpoint, show_title, refresh = 0):
     return container
 
 def render_listings(endpoint, default_title = None, return_response = False,
-        cache_time = 120, flags = None):
+        cache_time = 120, flags = None, hide_media_prompt = None):
 
     slog.debug('Rendering listings for %s' % endpoint)
     listings_endpoint = ss.util.listings_endpoint(endpoint)
+
+    if '/shows/latest' in endpoint or '/shows/released' in endpoint or '/shows/letters' in endpoint:
+        hide_media_prompt = True
 
     try:
         response  = JSON.ObjectFromURL(listings_endpoint, cacheTime = cache_time,
                 timeout = 45)
         container = render_listings_response(response, endpoint = endpoint,
-                default_title = default_title, flags = flags)
+                default_title = default_title, hide_media_prompt = hide_media_prompt, flags = flags)
     except Exception, e:
         slog.exception('Error requesting %s' % endpoint)
 
@@ -98,7 +105,9 @@ def render_listings(endpoint, default_title = None, return_response = False,
         return container
 
 def render_listings_response(response, endpoint, default_title = None,
-        flags = None):
+        flags = None, found_media = None, get_media = None, hide_media_prompt = None):
+    import re
+    oendpoint = endpoint
     display_title = response.get('title') or default_title
     container = container_for(display_title)
     items = response.get('items', [])
@@ -108,6 +117,8 @@ def render_listings_response(response, endpoint, default_title = None,
         permalink        = element.get('endpoint')
         display_title    = element.get('display_title')    or element.get('title')
         overview         = element.get('display_overview') or element.get('overview')
+        if 'Roku' == Client.Platform and overview:
+            overview = re.sub('(19|20)\d\d[-](0[1-9]|1[012])[-](0[1-9]|[12][0-9]|3[01])\s', '', overview).replace(u'\u2014 ','')
         tagline          = element.get('display_tagline')  or element.get('tagline')
         element_type     = element.get('_type')
         generic_callback = Callback(RenderListings, endpoint = permalink, default_title = display_title)
@@ -142,6 +153,10 @@ def render_listings_response(response, endpoint, default_title = None,
             media_hint = element_type
             if 'episode' == media_hint:
                 media_hint = 'show'
+                found_media = True
+            if get_media and not bridge.download.includes(permalink):
+                downloads.Queue(permalink, media_hint, display_title)
+                get_media = get_media + 1                
 
             display_title = flag_title(display_title, permalink, flags = flags)
             display_title = unicode(display_title)
@@ -151,7 +166,7 @@ def render_listings_response(response, endpoint, default_title = None,
                 tagline = tagline,
                 thumb   = element.get('artwork'),
                 summary = overview,
-                key     = Callback(WatchOptions, endpoint = permalink, title = display_title, media_hint = media_hint)
+                key     = Callback(WatchOptions, endpoint = permalink, title = display_title, media_hint = media_hint, summary = overview, thumb = element.get('artwork'), tagline = tagline)
             )
 
         elif 'foreign' == element_type:
@@ -160,10 +175,29 @@ def render_listings_response(response, endpoint, default_title = None,
                 url   = wizard_url(endpoint, i)
             )
 
-        if None != native:
+        if None != native and not get_media:
             container.add( native )
 
+    if hide_media_prompt:
+        found_media = False
+
+    if found_media and not get_media:
+        native = button('Download All Content', getallmedia,
+            endpoint = oendpoint,
+	    icon       = 'icon-downloads-queue.png'
+        )
+        container.objects.insert(0, native)
+
+    if get_media:
+         return  unicode(get_media)
     return container
+
+@route('%s/getallmedia' % consts.prefix)
+def getallmedia(endpoint, cache_time = 120):
+    listings_endpoint = ss.util.listings_endpoint(endpoint)
+    response  = JSON.ObjectFromURL(listings_endpoint, cacheTime = cache_time, timeout = 45)
+    messagetext = render_listings_response(response, endpoint, get_media = True) + ' items added to queue.'
+    return dialog('heading.download', messagetext)
 
 def flag_title(title, endpoint, flags = None):
     flags = flags or ['persisted', 'favorite']

@@ -6,7 +6,8 @@ pref_keys = [
     'download_limit',
     'download_strategy',
     'simultaneous_downloads',
-    'auto_force_success'
+    'auto_force_success',
+    'show_only_new'
 ]
 
 def download_strategy(strategy):

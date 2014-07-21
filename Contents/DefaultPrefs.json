@@ -29,6 +29,12 @@
     "id":       "auto_force_success",
     "label":    "Process 100% complete as success",
     "type":     "bool",
+    "default":  "false"
+  },
+  {
+    "id":       "show_only_new",
+    "label":    "Show only favorites with new episodes",
+    "type":     "bool",
     "default":  "true"
   },
   {
