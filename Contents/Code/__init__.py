@@ -12,6 +12,8 @@ slog   = ss.util.getLogger('ss.plex')
 
 updater.init(repo = 'mikew/ss-plex.bundle', branch = 'stable')
 
+bridge.download.check_queue()
+
 def Start():
     Plugin.AddViewGroup('Details', viewMode = 'InfoList', mediaType = 'items')
     Plugin.AddViewGroup('List',    viewMode = 'List',     mediaType = 'items')
@@ -21,7 +23,9 @@ def Start():
     DirectoryObject.art        = consts.art
     slog.debug('"Starting" SS-Plex')
 
-def ValidatePrefs(): pass
+def ValidatePrefs():
+    bridge.download.check_queue()
+    pass
 
 @handler(consts.prefix, consts.title, thumb = consts.icon, art = consts.art)
 def MainMenu():
@@ -52,3 +56,4 @@ import system
 import search
 import favorites
 import downloads
+

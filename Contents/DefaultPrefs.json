@@ -19,6 +19,19 @@
     "default":  "0"
   },
   {
+    "id":       "simultaneous_downloads",
+    "label":    "Limit simultaneous downloads",
+    "type":     "enum",
+    "values":   [ "1", "2", "5", "10", "15", "20", "30", "40", "50" ],
+    "default":  "5"
+  },
+  {
+    "id":       "auto_force_success",
+    "label":    "Process 100% complete as success",
+    "type":     "bool",
+    "default":  "false"
+  },
+  {
     "id":       "show_only_new",
     "label":    "Show only favorites with new episodes",
     "type":     "bool",
@@ -32,3 +45,4 @@
     "default":  "auto"
   }
 ]
+
