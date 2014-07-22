@@ -19,6 +19,12 @@
     "default":  "0"
   },
   {
+    "id":       "show_only_new",
+    "label":    "Show only favorites with new episodes",
+    "type":     "bool",
+    "default":  "true"
+  },
+  {
     "id":       "download_strategy",
     "label":    "Download using",
     "type":     "enum",
