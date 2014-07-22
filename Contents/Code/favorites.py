@@ -39,7 +39,8 @@ def MainMenu(refresh = 0, new_episodes = False):
             icon       = 'icon-downloads-queue.png'
             )
             container.add(native)
-            add_refresh_to(container, refresh, MainMenu)
+
+        add_refresh_to(container, refresh, MainMenu)
 
     return container
     
