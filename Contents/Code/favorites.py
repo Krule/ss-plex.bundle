@@ -1,6 +1,7 @@
 FEATURE_PREFIX = '%s/favorites' % consts.prefix
 
 import generic
+import downloads
 
 @route(FEATURE_PREFIX)
 def MainMenu(refresh = 0, new_episodes = False):
