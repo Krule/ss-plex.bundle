@@ -35,7 +35,7 @@
     "id":       "show_only_new",
     "label":    "Show only favorites with new episodes",
     "type":     "bool",
-    "default":  "true"
+    "default":  "false"
   },
   {
     "id":       "season_posters",
