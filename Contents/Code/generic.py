@@ -156,15 +156,22 @@ def render_listings_response(response, endpoint, default_title = None,
                 found_media = True
             if get_media and not bridge.download.includes(permalink):
                 downloads.Queue(permalink, media_hint, display_title)
-                get_media = get_media + 1                
+                get_media = get_media + 1
 
             display_title = flag_title(display_title, permalink, flags = flags)
             display_title = unicode(display_title)
 
+            thumb = element.get('artwork')
+
+            if bridge.settings.get('season_posters') and not thumb:
+                trash, subitem = render_listings(endpoint = permalink, return_response = True)
+                for j, zelement in enumerate(subitem.get('items', [])):
+                     thumb = zelement.get('artwork')
+
             native = PopupDirectoryObject(
                 title   = display_title,
                 tagline = tagline,
-                thumb   = element.get('artwork'),
+                thumb   = thumb,
                 summary = overview,
                 key     = Callback(WatchOptions, endpoint = permalink, title = display_title, media_hint = media_hint, summary = overview, thumb = element.get('artwork'), tagline = tagline)
             )
@@ -184,7 +191,7 @@ def render_listings_response(response, endpoint, default_title = None,
     if found_media and not get_media:
         native = button('Download All Content', getallmedia,
             endpoint = oendpoint,
-	    icon       = 'icon-downloads-queue.png'
+            icon     = 'icon-downloads-queue.png'
         )
         container.objects.insert(0, native)
 
@@ -203,13 +210,20 @@ def flag_title(title, endpoint, flags = None):
     flags = flags or ['persisted', 'favorite']
 
     if 'persisted' in flags and bridge.download.includes(endpoint):
-        return F('generic.flag-persisted', title)
+        if 'Roku' == Client.Platform:
+            return F('roku.flag-persisted', title)
+        else:
+            return F('generic.flag-persisted', title)
 
     if 'favorite' in flags and bridge.favorite.includes(endpoint):
-        return F('generic.flag-favorite', title)
+        if 'Roku' == Client.Platform:
+            return F('roku.flag-favorite', title)
+        else:
+            return F('generic.flag-favorite', title)
 
     return title
 
 def wizard_url(endpoint, index = 0):
     return '//ss/wizard?endpoint=%s&avoid_flv=%s&start_at=%s' % (endpoint,
             int(bridge.settings.get('avoid_flv_streaming', False)), index)
+

@@ -61,6 +61,10 @@
   "generic.flag-persisted":   "\u21E3 %s",
   "generic.flag-favorite":    "\u2605 %s",
   "generic.flag-new-content": "\u25C9 %s",
+  
+  "roku.flag-persisted":   "\u2020\u00BA %s",
+  "roku.flag-favorite":    "\u00A4 %s",
+  "roku.flag-new-content": "\u2022 %s",
 
   "download.heading.next":            "Try next source",
   "download.heading.cancel":          "Remove download",
@@ -86,3 +90,4 @@
   "updater.label.update-now":   "Update Now",
   "updater.response.updating":  "Please wait while the channel is updating."
 }
+

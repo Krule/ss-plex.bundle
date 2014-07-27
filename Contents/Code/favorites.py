@@ -6,6 +6,7 @@ import downloads
 @route(FEATURE_PREFIX)
 def MainMenu(refresh = 0, new_episodes = False):
     container = container_for('heading.favorites')
+    import re
 
     if 'favorites' in Dict:
         container.add(button('favorites.heading.migrate', Migrate1to2))
@@ -17,34 +18,40 @@ def MainMenu(refresh = 0, new_episodes = False):
 
             if bridge.favorite.show_has_new_episodes(endpoint, recents):
                 new_episodes = True
-                
+
             if not bridge.settings.get('show_only_new') and bridge.favorite.show_has_new_episodes(endpoint, recents):
-                title = F('generic.flag-new-content', title)
-            
+                if 'Roku' == Client.Platform:
+                    title = F('roku.flag-new-content', title)
+                else:
+                    title = F('generic.flag-new-content', title)
+
+            overview = fav.get('overview')
+            if 'Roku' == Client.Platform and overview:
+                overview = re.sub('(19|20)\d\d[-](0[1-9]|1[012])[-](0[1-9]|[12][0-9]|3[01])\s', '', overview).replace(u'\u2014 ','')
+
             native = TVShowObject(
                 rating_key = endpoint,
                 title      = title,
-                summary    = fav.get('overview'),
+                summary    = overview,
                 thumb      = fav['artwork'],
                 key        = Callback(generic.ListTVShow, refresh = 0, endpoint = endpoint, show_title = title)
-            )        
+            )
 
             if bridge.settings.get('show_only_new') and bridge.favorite.show_has_new_episodes(endpoint, recents):
                 container.add(native)
-            
+
             if not bridge.settings.get('show_only_new'):
                 container.add(native)
-            
+
         if new_episodes:
             native = button('Watch Later New Episodes', WatchLaterReleases,
             icon       = 'icon-downloads-queue.png'
             )
             container.add(native)
-
         add_refresh_to(container, refresh, MainMenu)
 
     return container
-    
+
 @route('%s/WatchLaterReleases' % consts.prefix)
 def WatchLaterReleases(refresh = 0, addedqueue = 0, noref = 0):
 
@@ -84,7 +91,7 @@ def WatchLaterReleases(refresh = 0, addedqueue = 0, noref = 0):
                     Slistings_endpoint = ss.util.listings_endpoint(permalink)
                     Sresponse = JSON.ObjectFromURL(Slistings_endpoint, cacheTime = 120, timeout = 45)
                     Sitems = Sresponse.get('items', [])
-    
+
                     for j, Selement in enumerate(Sitems):
                         Spermalink        = Selement.get('endpoint')
                         Sdisplay_title    = Selement.get('display_title')    or Selement.get('title')
@@ -95,14 +102,14 @@ def WatchLaterReleases(refresh = 0, addedqueue = 0, noref = 0):
                             allendpoints[0].append(Spermalink)
                             allendpoints[1].append(Smedia_hint)
                             allendpoints[2].append(Sdisplay_title)
-    
+
             for i, item in enumerate(allendpoints[0]):
                  if bridge.download.includes(item):
                      b = int(item[item.rfind('/')+1::])
                      if b > download_ref: download_ref = b
-    
+
             if download_ref:
-    
+
                 bridge.favorite.touch_last_viewed(endpoint)
                 for i, item in enumerate(allendpoints[0]):
                      if int(item[item.rfind('/')+1::]) > download_ref:
@@ -111,15 +118,15 @@ def WatchLaterReleases(refresh = 0, addedqueue = 0, noref = 0):
                              addedqueue = addedqueue + 1
             else:
                 noref =  noref + 1
-                             
+
     if addedqueue:
         messagetext = unicode(addedqueue) + ' items added to queue.'
     else:
         messagetext = 'Nothing added to queue.'
-    
+
     if noref:
        messagetext = messagetext + ' ' + unicode(noref) + ' items need manual queuing.'
-    
+
     return dialog('heading.download', messagetext)
 
 @route('%s/toggle' % FEATURE_PREFIX)
@@ -170,4 +177,5 @@ def Migrate1to2():
 
     migrate()
     return dialog('Favorites', 'Your favorites are being updated. Return shortly.')
+
 
