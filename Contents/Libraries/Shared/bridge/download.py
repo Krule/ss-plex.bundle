@@ -228,7 +228,7 @@ def dispatch(should_thread = True):
     def store_curl_pid(dl):
         remove_dlq(endpoint = unicode(dl.endpoint))
         append_dlq(endpoint = unicode(dl.endpoint),
-                title = download['title'],
+                title = dl.file_name,
                 media_hint = download['media_hint'],
                 pid = dl.pid)
 

@@ -7,7 +7,8 @@ pref_keys = [
     'download_strategy',
     'simultaneous_downloads',
     'auto_force_success',
-    'show_only_new'
+    'show_only_new',
+    'season_posters'
 ]
 
 def download_strategy(strategy):
