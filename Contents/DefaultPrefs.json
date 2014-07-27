@@ -38,6 +38,12 @@
     "default":  "true"
   },
   {
+    "id":       "season_posters",
+    "label":    "Use season posters if episode posters are unavailable ",
+    "type":     "bool",
+    "default":  "false"
+  },
+  {
     "id":       "download_strategy",
     "label":    "Download using",
     "type":     "enum",
@@ -45,4 +51,3 @@
     "default":  "auto"
   }
 ]
-
