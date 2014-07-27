@@ -1,5 +1,6 @@
 FEATURE_PREFIX = '%s/search' % consts.prefix
 from generic import render_listings
+import re
 
 @route(FEATURE_PREFIX)
 def MainMenu():
@@ -11,6 +12,10 @@ def MainMenu():
     return container
 
 def ResultsMenu(query, foo = 1):
+
+    if 'Roku' == Client.Platform and (re.search('\s*\(\d*\)', query)):
+        query = re.sub('\s*\(\d*\)\s*','',query)
+
     container = render_listings('/search/%s' % ss.util.q(query))
     labels    = [ 'add', 'remove' ]
     response  = int(bridge.search.includes(query))
