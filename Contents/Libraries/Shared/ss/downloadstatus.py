@@ -48,21 +48,26 @@ def parse_wget(fname):
     data = f.read()
     f.close()
 
-    status_line    = data.split("\r")[-1]
-    status_match   = re.search(r'(\d+)%.*?([\d,]+)\s+([0-9A-Za-z.]+)/s\s+(?:eta|in) (.+) ', status_line)
-    total_size     = re.search(r'^Length: \d+ \((.+)\)', data, re.MULTILINE).group(1)
-    started_match  = re.findall(r'^--([\d\-: ]+)--', data, re.MULTILINE)[-1]
-    started        = datetime.datetime.strptime(started_match, '%Y-%m-%d %H:%M:%S')
-    now            = datetime.datetime.now()
-    delta          = now - started
-    elapsed        = (delta.microseconds + (delta.seconds + delta.days * 24 * 3600) * 10**6) / 10**6
+    status_line = data.split("\r")[-1]
+    status_match = re.search(r'(\d+)%.*?([\d\.,]+\d+)[\sMG]+([0-9A-Za-z.]+)\/s\s+(?:eta|in) (.+[ms])', status_line)
+    total_size = re.search(r'^Length: \d+ \((.+)\)', data, re.MULTILINE).group(1)
+    started_match = re.findall(r'^--([\d\-: ]+)--', data, re.MULTILINE)[-1]
+    started = datetime.datetime.strptime(started_match, '%Y-%m-%d %H:%M:%S')
+    now = datetime.datetime.now()
+    delta = now - started
+    elapsed = (delta.microseconds + (delta.seconds + delta.days * 24 * 3600) * 10**6) / 10**6
     percent_total  = status_match.group(1)
-    total_received = int(re.sub(r'[^\d]', '', status_match.group(2))) / 1024
+    total_received = float(re.sub(r'[^\d\.]', '', status_match.group(2)))
+    # If remainder is zero, the number is whole and probably from older wget version.
+    if total_received % 1 == 0:
+        total_received = total_received / 1024
+    # If there is a remainder we must be using wget 1.16, which displays in Megabytes.
+    else:
+        total_received = total_received * 1024
     current_speed  = status_match.group(3)
     eta            = status_match.group(4).strip()
 
-    average_download = str(total_received / elapsed) + ' KB/s'
-
+    average_download = str(round(total_received / elapsed, 2)) + ' KB/s'
     return dict(
         percent_total    = percent_total,
         total_size       = total_size,
